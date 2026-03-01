@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Heritage | Digital Menu</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <!-- Main Style -->
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css">
+    <!-- Icons (Wait for project-specific icons or use FontAwesome) -->
+    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="brand">Grand <span>Heritage</span></div>
+        <ul class="nav-links">
+            <li><a href="#menu">Menu</a></li>
+            <li><a href="#about">About Us</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li class="cart-icon" onclick="toggleCart()">
+                🛒 <span class="cart-count">0</span>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Exquisite Dining</h1>
+        <p>Experience the finest culinary creations at Grand Heritage. Explore our curated menu and enjoy flavors from
+            around the world.</p>
+        <a href="#menu" class="btn-primary">Explore Menu</a>
+    </section>
+
+    <!-- Menu Section -->
+    <section class="menu-section" id="menu">
+        <div class="section-header">
+            <h2>Our Signature Menu</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="categories-tabs">
+            <button class="cat-tab active" data-category="all">All Items</button>
+            <button th:each="cat : ${categories}" class="cat-tab"
+                th:attr="data-category=${#strings.replace(#strings.toLowerCase(cat.categoryName), ' ', '-')}"
+                th:text="${cat.categoryName}">Category</button>
+        </div>
+
+        <div class="menu-grid">
+            <th:block th:each="cat : ${categories}">
+                <div th:each="item : ${cat.menuItems}" class="menu-card" th:if="${item.isAvailable}"
+                    th:attr="data-category=${#strings.replace(#strings.toLowerCase(cat.categoryName), ' ', '-')}">
+
+                    <img th:src="${item.imageUrl}" class="item-img" th:alt="${item.itemName}">
+
+                    <div class="item-badge" th:if="${item.isVegetarian}">Veg</div>
+                    <div class="item-badge spicy" th:if="${item.isSpicy}" style="background: #ff4d4d; top: 45px;">Spicy
+                    </div>
+
+                    <div class="item-details">
+                        <div class="item-header">
+                            <span class="item-name" th:text="${item.itemName}">Item Name</span>
+                            <span class="item-price">₹<span
+                                    th:text="${#numbers.formatDecimal(item.price, 0, 0)}">0</span></span>
+                        </div>
+                        <p class="item-desc" th:text="${item.description}">Description</p>
+                        <button class="add-btn" th:attr="data-name=${item.itemName},data-price=${item.price}">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </th:block>
+        </div>
+    </section>
+
+    <!-- Cart Drawer -->
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>Your Selection</h3>
+            <span class="close-cart" onclick="toggleCart()">&times;</span>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Items appear here -->
+            <p style="text-align: center; opacity: 0.5; margin-top: 50px;">Your cart is empty</p>
+        </div>
+        <div class="cart-total">
+            <div class="total-row">
+                <span>Total</span>
+                <span id="cart-total-value">₹0</span>
+            </div>
+            <button class="checkout-btn">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Grand Heritage Hotel & Resorts. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        let cart = [];
+        let total = 0;
+
+        function toggleCart() {
+            document.getElementById('cart-drawer').classList.toggle('open');
+        }
+
+        // Add to cart handler
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('add-btn')) {
+                const name = e.target.getAttribute('data-name');
+                const price = parseFloat(e.target.getAttribute('data-price'));
+                addToCart(name, price);
+            }
+        });
+
+        function addToCart(name, price) {
+            cart.push({ name, price });
+            total += price;
+            updateCart();
+
+            const cartCount = document.querySelector('.cart-count');
+            cartCount.textContent = cart.length;
+            cartCount.classList.add('beating');
+            setTimeout(() => cartCount.classList.remove('beating'), 300);
+        }
+
+        function updateCart() {
+            const cartItemsEl = document.getElementById('cart-items');
+            const cartTotalEl = document.getElementById('cart-total-value');
+
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = '<p style="text-align: center; opacity: 0.5; margin-top: 50px;">Your cart is empty</p>';
+            } else {
+                cartItemsEl.innerHTML = cart.map((item, index) => `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h4 style="color: var(--primary)">${item.name}</h4>
+                            <p>₹${item.price.toLocaleString('en-IN')}</p>
+                        </div>
+                        <span onclick="removeFromCart(${index})" style="cursor: pointer; color: var(--secondary)">Remove</span>
+                    </div>
+                `).join('');
+            }
+
+            cartTotalEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+        }
+
+        function removeFromCart(index) {
+            total -= cart[index].price;
+            cart.splice(index, 1);
+            updateCart();
+            document.querySelector('.cart-count').textContent = cart.length;
+        }
+
+        // Category Filter Logic
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.cat-tab');
+            const cards = document.querySelectorAll('.menu-card');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const category = tab.getAttribute('data-category');
+
+                    cards.forEach(card => {
+                        if (category === 'all' || card.getAttribute('data-category') === category) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
